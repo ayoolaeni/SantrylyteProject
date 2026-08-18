@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+
+# Environment
+.env
+
+# Instance data (sqlite db, spill/DLQ buffers)
+instance/
+
+# Test / coverage artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+*_ground_truth.csv
+
+# Editor / OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store

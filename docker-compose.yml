@@ -1,0 +1,51 @@
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: sentry
+      POSTGRES_PASSWORD: sentry
+      POSTGRES_DB: sentrylite
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sentry -d sentrylite"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      FLASK_APP: "app:create_app"
+      FLASK_ENV: production
+      SECRET_KEY: ${SECRET_KEY:-change-me-to-32-random-bytes}
+      DATABASE_URL: postgresql+psycopg://sentry:sentry@db:5432/sentrylite
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
+      SYSLOG_BIND: 0.0.0.0
+      SYSLOG_UDP_PORT: 5514
+      SYSLOG_TCP_PORT: 5514
+    ports:
+      - "5000:5000"
+      - "5514:5514/udp"
+      - "5514:5514/tcp"
+    volumes:
+      - app_instance:/app/instance
+    command: >
+      sh -c "flask db upgrade &&
+             python -m seeds.seed_users &&
+             python -m seeds.seed_rules &&
+             python -m seeds.seed_assets &&
+             python run.py"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/auth/login', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 15s
+
+volumes:
+  db_data:
+  app_instance:

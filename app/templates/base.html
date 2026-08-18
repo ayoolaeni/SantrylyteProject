@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}SentryLite{% endblock %}</title>
+{% if csrf_token is defined %}<meta name="csrf-token" content="{{ csrf_token() }}">{% endif %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+{% block head %}{% endblock %}
+</head>
+<body>
+{% if current_user.is_authenticated %}
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand">🛡 SentryLite</div>
+    <nav aria-label="Primary">
+      <a href="{{ url_for('dashboard.index') }}" class="{{ 'active' if request.path == '/' }}">Dashboard</a>
+      <a href="{{ url_for('alerts.index') }}" class="{{ 'active' if request.path == '/alerts' }}">Alert Queue</a>
+      <a href="{{ url_for('incidents.index') }}" class="{{ 'active' if request.path == '/incidents' }}">Incidents</a>
+      <a href="{{ url_for('dashboard.reports') }}" class="{{ 'active' if request.path == '/reports' }}">Reports</a>
+      {% if current_user.role == 'ADMIN' %}
+      <div class="text-muted mt-2" style="font-size:0.75rem; text-transform:uppercase; padding: 0 10px;">Admin</div>
+      <a href="{{ url_for('admin.sources') }}">Sources</a>
+      <a href="{{ url_for('admin.rules') }}">Rules</a>
+      <a href="{{ url_for('admin.assets') }}">Critical Assets</a>
+      <a href="{{ url_for('admin.users') }}">Users</a>
+      {% endif %}
+    </nav>
+    <div class="mt-2" style="position:absolute; bottom:16px; width: 190px;">
+      <div class="text-muted" style="font-size:0.8rem;">{{ current_user.full_name }} · {{ current_user.role }}</div>
+      <div class="flex mt-1">
+        <button type="button" id="theme-toggle" aria-label="Toggle light/dark theme">☾/☀</button>
+        <form method="post" action="{{ url_for('auth.logout') }}" style="margin:0;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit">Logout</button>
+        </form>
+      </div>
+    </div>
+  </aside>
+  <main class="main" id="main-content">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}" role="alert">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+</div>
+<div class="toast-stack" id="toast-stack" aria-live="polite"></div>
+{% else %}
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="flash flash-{{ category }}" role="alert">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+  {% block guest_content %}{% endblock %}
+{% endif %}
+<script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

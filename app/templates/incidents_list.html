@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Incidents · SentryLite{% endblock %}
+{% block content %}
+<div class="topbar"><h1 style="font-size:1.3rem; margin:0;">Incidents</h1></div>
+<div id="incidents-list-root"></div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/vendor/socket.io.min.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/incident.js') }}"></script>
+{% endblock %}

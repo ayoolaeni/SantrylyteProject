@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Login · SentryLite{% endblock %}
+{% block guest_content %}
+<div class="login-wrap">
+  <div class="card login-card">
+    <h1 style="font-size:1.3rem;">🛡 SentryLite</h1>
+    <p class="text-muted">Sign in to continue.</p>
+    <form method="post" novalidate>
+      {{ form.hidden_tag() if form.hidden_tag }}
+      <div class="mt-1">
+        <label for="username">Username</label>
+        {{ form.username(id="username", autocomplete="username", autofocus=true) }}
+      </div>
+      <div class="mt-1">
+        <label for="password">Password</label>
+        {{ form.password(id="password", type="password", autocomplete="current-password") }}
+      </div>
+      <button type="submit" class="primary mt-2" style="width:100%;">Sign in</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

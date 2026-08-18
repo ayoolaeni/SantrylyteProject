@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Alert Queue · SentryLite{% endblock %}
+{% block content %}
+<div class="topbar">
+  <h1 style="font-size:1.3rem; margin:0;">Alert Queue</h1>
+</div>
+
+<div class="filter-bar" id="filter-bar"></div>
+
+<div class="card" style="overflow-x:auto;">
+  <table>
+    <thead>
+      <tr>
+        <th></th><th>Time</th><th>Priority</th><th>Score</th><th>Type</th><th>Src IP</th><th>Message</th><th>Status</th><th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="alerts-body"></tbody>
+  </table>
+</div>
+<div class="flex mt-2" id="pager"></div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/vendor/socket.io.min.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/alerts.js') }}"></script>
+{% endblock %}

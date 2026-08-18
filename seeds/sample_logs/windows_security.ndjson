@@ -1,0 +1,4 @@
+{"EventID": 4625, "TimeCreated": "2023-10-11T22:25:00Z", "IpAddress": "198.51.100.90", "TargetUserName": "administrator", "Computer": "WIN-DC01", "Message": "An account failed to log on."}
+{"EventID": 4624, "TimeCreated": "2023-10-11T22:25:05Z", "IpAddress": "198.51.100.90", "TargetUserName": "administrator", "Computer": "WIN-DC01", "Message": "An account was successfully logged on."}
+{"EventID": 4720, "TimeCreated": "2023-10-11T22:26:00Z", "TargetUserName": "temp_user", "Computer": "WIN-DC01", "Message": "A user account was created."}
+{"EventID": 7040, "TimeCreated": "2023-10-11T22:27:00Z", "Computer": "WIN-DC01", "Message": "The Windows Event Log service start type was changed."}

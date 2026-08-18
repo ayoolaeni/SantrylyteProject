@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}Users · Admin{% endblock %}
+{% block content %}
+<div class="topbar"><h1 style="font-size:1.3rem; margin:0;">Users</h1></div>
+<div id="admin-users-root"></div>
+{% endblock %}
+{% block scripts %}<script type="module" src="{{ url_for('static', filename='js/admin.js') }}"></script>{% endblock %}

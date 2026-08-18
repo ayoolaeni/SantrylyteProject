@@ -1,0 +1,4 @@
+{% extends "base.html" %}
+{% block title %}Not found · SentryLite{% endblock %}
+{% block content %}<div class="card">Page not found.</div>{% endblock %}
+{% block guest_content %}<div class="login-wrap"><div class="card">Page not found. <a href="{{ url_for('auth.login') }}">Sign in</a></div></div>{% endblock %}

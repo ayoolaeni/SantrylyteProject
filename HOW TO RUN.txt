@@ -1,0 +1,63 @@
+SENTRYLITE - HOW TO RUN
+========================
+
+You only need to do this once:
+
+1. Install "Docker Desktop"
+   Download it from: https://www.docker.com/products/docker-desktop/
+   Install it like any normal program, then RESTART YOUR COMPUTER
+   if it asks you to.
+
+2. Open Docker Desktop (search for it in the Start Menu) and wait
+   until it says "Docker Desktop is running" in the bottom left.
+   You can leave it running in the background from now on.
+
+
+EVERY TIME YOU WANT TO USE SENTRYLITE:
+========================================
+
+1. Make sure Docker Desktop is open (see step 2 above).
+
+2. Double-click the file called:
+       Start SentryLite.bat
+
+3. A black window will open and do some work. The first time you
+   run it, this can take a few minutes (it's downloading and setting
+   everything up). After the first time, it only takes a few seconds.
+
+4. When it's done, your web browser will open automatically to
+   SentryLite. If it doesn't, just open your browser and go to:
+
+       http://localhost:5000
+
+5. Log in with:
+       Username: admin
+       Password: admin
+
+   You'll be asked to choose a new password the first time - just
+   type any password with 8 or more characters.
+
+That's it - you're in.
+
+
+TO CLOSE SENTRYLITE:
+======================
+You don't have to do anything - you can just leave it running.
+If you want to shut it down, double-click:
+       Stop SentryLite.bat
+
+Your data (incidents, rules, users, everything) is kept safe and will
+still be there next time you run "Start SentryLite.bat".
+
+
+IF SOMETHING GOES WRONG:
+==========================
+- Make sure Docker Desktop is open and says "running" before you
+  double-click "Start SentryLite.bat".
+- If a black window shows a red error message, take a screenshot
+  and send it back for help.
+
+
+WANT A GUIDED TOUR OF THE FEATURES?
+=====================================
+See the file "DEMO.md" for a step-by-step walkthrough.

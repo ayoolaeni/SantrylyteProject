@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}Reports · SentryLite{% endblock %}
+{% block content %}
+<div class="topbar"><h1 style="font-size:1.3rem; margin:0;">Reports</h1></div>
+<div id="reports-root"></div>
+{% endblock %}
+{% block scripts %}<script type="module" src="{{ url_for('static', filename='js/reports.js') }}"></script>{% endblock %}

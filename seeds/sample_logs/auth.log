@@ -1,0 +1,10 @@
+Jul 10 10:00:01 web01 sshd[1234]: Failed password for invalid user admin from 203.0.113.5 port 51515 ssh2
+Jul 10 10:00:02 web01 sshd[1235]: Failed password for invalid user admin from 203.0.113.5 port 51516 ssh2
+Jul 10 10:00:03 web01 sshd[1236]: Failed password for invalid user admin from 203.0.113.5 port 51517 ssh2
+Jul 10 10:00:04 web01 sshd[1237]: Failed password for invalid user admin from 203.0.113.5 port 51518 ssh2
+Jul 10 10:00:05 web01 sshd[1238]: Failed password for invalid user admin from 203.0.113.5 port 51519 ssh2
+Jul 10 10:00:06 web01 sshd[1239]: Failed password for invalid user admin from 203.0.113.5 port 51520 ssh2
+Jul 10 10:00:07 web01 sshd[1240]: Accepted password for root from 203.0.113.5 port 51521 ssh2
+Jul 10 10:00:10 web01 sudo:    alice : TTY=pts/0 ; PWD=/home/alice ; USER=root ; COMMAND=/bin/su
+Jul 10 10:01:00 web01 useradd[1250]: new user: name=bob, UID=1002, GID=1002, home=/home/bob, shell=/bin/bash
+Jul 10 10:02:00 web01 usermod[1251]: add 'bob' to group 'sudo'

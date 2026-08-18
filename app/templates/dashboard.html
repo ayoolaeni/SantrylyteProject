@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · SentryLite{% endblock %}
+{% block content %}
+<div class="topbar">
+  <h1 style="font-size:1.3rem; margin:0;">Dashboard</h1>
+</div>
+
+<div class="grid kpi-row" id="kpi-row" aria-live="polite"></div>
+
+<div class="grid charts-row mt-2">
+  <div class="card">
+    <h2 style="font-size:1rem; margin-top:0;">Event volume (last hour)</h2>
+    <div style="height:260px;"><canvas id="volume-chart"></canvas></div>
+  </div>
+  <div class="card">
+    <h2 style="font-size:1rem; margin-top:0;">Priority distribution (24h)</h2>
+    <div style="height:260px;"><canvas id="priority-chart"></canvas></div>
+  </div>
+</div>
+
+<div class="grid charts-row-2 mt-2">
+  <div class="card">
+    <h2 style="font-size:1rem; margin-top:0;">Top 10 sources (24h)</h2>
+    <div style="height:240px;"><canvas id="sources-chart"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="flex-between">
+      <h2 style="font-size:1rem; margin:0;">Live event feed</h2>
+      <button type="button" id="feed-pause-toggle">Pause</button>
+    </div>
+    <div style="max-height:320px; overflow-y:auto;" aria-live="polite">
+      <table>
+        <thead><tr><th>Time</th><th>Priority</th><th>Type</th><th>Src IP</th><th>Message</th></tr></thead>
+        <tbody id="feed-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/vendor/chart.umd.js') }}"></script>
+<script src="{{ url_for('static', filename='js/vendor/socket.io.min.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

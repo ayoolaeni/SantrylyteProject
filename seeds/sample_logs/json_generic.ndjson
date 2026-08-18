@@ -1,0 +1,3 @@
+{"timestamp": "2023-10-11T22:20:00Z", "event_type": "AUTH_FAILURE", "src_ip": "203.0.113.44", "username": "svc-app", "message": "invalid credentials", "action": "FAILURE"}
+{"timestamp": "2023-10-11T22:20:05Z", "event_type": "PROCESS_EXEC", "hostname": "app02", "username": "svc-app", "message": "started worker process"}
+{"timestamp": "2023-10-11T22:20:10Z", "event_type": "CONFIG_CHANGE", "hostname": "app02", "username": "deploy", "message": "updated feature flag rollout=100%"}
