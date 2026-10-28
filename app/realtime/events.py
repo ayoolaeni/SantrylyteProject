@@ -31,8 +31,9 @@ def emit_alert_high(event_summary):
     rooms = ["priority_high"]
     if event_summary.get("priority_level") == "CRITICAL":
         rooms.append("priority_critical")
-    for room in rooms:
-        socketio.emit("alert:high", event_summary, room=room, namespace=NAMESPACE)
+    # One emit to the list of rooms: a client subscribed to both rooms gets the alert once
+    # (emitting per room showed every CRITICAL toast twice on the dashboard).
+    socketio.emit("alert:high", event_summary, to=rooms, namespace=NAMESPACE)
 
 
 def emit_incident_created(incident_summary):
@@ -41,6 +42,11 @@ def emit_incident_created(incident_summary):
 
 def emit_incident_updated(payload):
     socketio.emit("incident:updated", payload, room="incidents", namespace=NAMESPACE)
+
+
+def emit_user_notification(user_id, payload):
+    """A personal notification (e.g. 'incident assigned to you') to every tab that user has open."""
+    socketio.emit("notify", payload, room=f"user_{user_id}", namespace=NAMESPACE)
 
 
 def emit_source_silent(payload):
@@ -67,22 +73,30 @@ def _event_flush_loop():
 
 def _stats_tick_loop(app):
     from app.api.stats import build_summary
+    from app.extensions import db
 
     with app.app_context():
         while True:
             socketio.sleep(5)
             try:
-                socketio.emit("stats:tick", build_summary(), namespace=NAMESPACE)
+                summary = build_summary()
+                # End the read transaction before emitting (emitting can yield to other
+                # green threads); a long-lived loop must not sit "idle in transaction".
+                db.session.remove()
+                socketio.emit("stats:tick", summary, namespace=NAMESPACE)
             except Exception:
+                db.session.remove()
                 logger.exception("stats tick failed")
 
 
 def _source_silent_loop(app):
+    from app.extensions import db
     from app.models.log_source import LogSource
 
     with app.app_context():
         while True:
             socketio.sleep(60)
+            db.session.remove()
             try:
                 silent_minutes = app.config["SOURCE_SILENT_MINUTES"]
                 cutoff = datetime.now(timezone.utc) - timedelta(minutes=silent_minutes)

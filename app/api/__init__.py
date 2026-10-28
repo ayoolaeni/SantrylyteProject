@@ -11,3 +11,4 @@ from app.api import users  # noqa: E402,F401
 from app.api import assets  # noqa: E402,F401
 from app.api import stats  # noqa: E402,F401
 from app.api import reports  # noqa: E402,F401
+from app.api import simulator  # noqa: E402,F401

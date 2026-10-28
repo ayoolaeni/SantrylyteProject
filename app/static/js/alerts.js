@@ -10,6 +10,7 @@ const state = {
   event_type: '',
   status: '',
   src_ip: '',
+  source_id: '',
   q: '',
   from: '',
   to: '',
@@ -22,7 +23,7 @@ let lastResult = null;
 function readStateFromUrl() {
   const params = new URLSearchParams(window.location.search);
   if (params.get('priority')) state.priority = params.get('priority').split(',');
-  ['event_type', 'status', 'src_ip', 'q', 'from', 'to'].forEach((k) => {
+  ['event_type', 'status', 'src_ip', 'source_id', 'q', 'from', 'to'].forEach((k) => {
     if (params.get(k)) state[k] = params.get(k);
   });
   if (params.get('page')) state.page = parseInt(params.get('page'), 10) || 1;
@@ -31,7 +32,7 @@ function readStateFromUrl() {
 function writeStateToUrl() {
   const params = new URLSearchParams();
   if (state.priority.length) params.set('priority', state.priority.join(','));
-  ['event_type', 'status', 'src_ip', 'q', 'from', 'to'].forEach((k) => {
+  ['event_type', 'status', 'src_ip', 'source_id', 'q', 'from', 'to'].forEach((k) => {
     if (state[k]) params.set(k, state[k]);
   });
   if (state.page > 1) params.set('page', state.page);
@@ -108,7 +109,11 @@ function buildFilterBar() {
   bar.appendChild(
     el('div', {}, [
       el('label', {}, ' '),
-      el('button', { onclick: () => bulkAction('acknowledge') }, 'Acknowledge selected'),
+      el('div', { class: 'btn-row' }, [
+        el('button', { onclick: () => bulkAction('acknowledge') }, 'Acknowledge selected'),
+        el('button', { onclick: () => bulkAction('dismiss') }, 'Dismiss selected'),
+        el('button', { class: 'ghost', onclick: () => { window.location.href = '/alerts'; } }, 'Clear filters'),
+      ]),
     ])
   );
 }
@@ -198,6 +203,7 @@ async function refresh() {
     event_type: state.event_type,
     status: state.status,
     src_ip: state.src_ip,
+    source_id: state.source_id,
     q: state.q,
     from: state.from ? new Date(state.from).toISOString() : '',
     to: state.to ? new Date(state.to).toISOString() : '',

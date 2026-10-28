@@ -72,7 +72,13 @@ def build_summary():
 @api_bp.route("/stats/summary", methods=["GET"])
 @role_required()
 def summary():
-    return jsonify(build_summary())
+    from flask_login import current_user
+
+    data = build_summary()
+    open_incidents = Incident.query.filter(Incident.state.in_(_OPEN_STATES))
+    data["my_open_incidents"] = open_incidents.filter(Incident.assigned_to == current_user.user_id).count()
+    data["unassigned_open_incidents"] = open_incidents.filter(Incident.assigned_to.is_(None)).count()
+    return jsonify(data)
 
 
 @api_bp.route("/stats/timeseries", methods=["GET"])
@@ -95,8 +101,14 @@ def timeseries():
         bucket_epoch = epoch - (epoch % interval_seconds)
         buckets[bucket_epoch][priority] += 1
 
+    # Every bucket in the window, empty ones included, so the chart is a continuous
+    # timeline (with sparse buckets a burst in one minute drew as a single invisible point).
+    start_epoch = int(start.timestamp())
+    first = start_epoch - (start_epoch % interval_seconds) + interval_seconds
+    now_epoch = int(now.timestamp())
+    last = now_epoch - (now_epoch % interval_seconds)
     series = []
-    for bucket_epoch in sorted(buckets):
+    for bucket_epoch in range(first, last + 1, interval_seconds):
         bucket_dt = datetime.fromtimestamp(bucket_epoch, tz=timezone.utc)
         entry = {"bucket": bucket_dt.isoformat()}
         entry.update({p: buckets[bucket_epoch].get(p, 0) for p in PRIORITY_LEVELS})
@@ -126,16 +138,22 @@ def top_sources():
     limit = min(50, int(request.args.get("limit", 10)))
     start = datetime.now(timezone.utc) - timedelta(seconds=window_seconds)
 
+    # Events from senders nobody registered under Admin -> Sources have no source_id; show
+    # them by the hostname in the log line rather than leaving the chart empty.
+    label = db.func.coalesce(LogSource.name, Event.hostname, "Unregistered sender")
     rows = (
-        db.session.query(LogSource.name, db.func.count(Event.event_id).label("count"))
-        .join(Event, Event.source_id == LogSource.source_id)
+        db.session.query(label.label("label"), LogSource.source_id, db.func.count(Event.event_id).label("count"))
+        .select_from(Event)
+        .outerjoin(LogSource, Event.source_id == LogSource.source_id)
         .filter(Event.timestamp >= start)
-        .group_by(LogSource.name)
+        .group_by(label, LogSource.source_id)
         .order_by(db.desc("count"))
         .limit(limit)
         .all()
     )
-    return jsonify([{"source_name": name, "count": count} for name, count in rows])
+    return jsonify(
+        [{"source_name": name, "registered": source_id is not None, "count": count} for name, source_id, count in rows]
+    )
 
 
 @api_bp.route("/stats/top-attackers", methods=["GET"])

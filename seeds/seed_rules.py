@@ -147,17 +147,33 @@ RULES = [
 ]
 
 
+# Default response actions (see TriageRule.actions). Rules not listed only add their weight.
+DEFAULT_ACTIONS = {
+    "Successful login after failures": {"create_incident": True, "incident_priority": "CRITICAL", "notify_roles": ["ADMIN"]},
+    "Root / admin login from external IP": {"min_priority": "HIGH"},
+    "Privilege escalation": {"create_incident": True, "incident_priority": "HIGH"},
+    "Log service stopped": {"min_priority": "HIGH", "create_incident": True, "incident_priority": "HIGH", "notify_roles": ["ADMIN"]},
+}
+
+
 def run():
     app = create_app()
     with app.app_context():
         db.create_all()
+        backfilled = 0
         for spec in RULES:
+            actions = DEFAULT_ACTIONS.get(spec["name"], {})
             existing = TriageRule.query.filter_by(name=spec["name"]).first()
             if existing:
+                # Rules seeded before actions existed get the defaults once; an admin's own
+                # choice (including "no actions", stored as {}) is never overwritten.
+                if existing.actions is None:
+                    existing.actions = actions
+                    backfilled += 1
                 continue
-            db.session.add(TriageRule(**spec))
+            db.session.add(TriageRule(**spec, actions=actions))
         db.session.commit()
-        print(f"Seeded {len(RULES)} default triage rules (skipping any that already exist).")
+        print(f"Seeded {len(RULES)} default triage rules (skipping any that already exist; {backfilled} given default actions).")
 
 
 if __name__ == "__main__":

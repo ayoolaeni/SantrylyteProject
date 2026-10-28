@@ -58,7 +58,11 @@ def invalidate_asset_cache():
 
 
 def match_critical_asset(dest_ip, hostname):
-    """Return the matching CriticalAsset row, or None."""
+    """Return the most specific matching critical asset, or None.
+
+    An exact IP or hostname wins over a network range, and a narrower range wins over a
+    wider one, so a host that is also inside a protected subnet gets its own multiplier.
+    """
     assets = _asset_cache.get()
     ip_obj = None
     if dest_ip:
@@ -67,19 +71,21 @@ def match_critical_asset(dest_ip, hostname):
         except ValueError:
             ip_obj = None
 
+    best, best_prefix = None, -1
     for asset in assets:
         identifier = asset.identifier
         if hostname and identifier.lower() == hostname.lower():
             return asset
         if dest_ip and identifier == dest_ip:
             return asset
-        if ip_obj is not None:
+        if ip_obj is not None and "/" in identifier:
             try:
-                if ip_obj in ipaddress.ip_network(identifier, strict=False):
-                    return asset
+                network = ipaddress.ip_network(identifier, strict=False)
             except ValueError:
                 continue
-    return None
+            if ip_obj in network and network.prefixlen > best_prefix:
+                best, best_prefix = asset, network.prefixlen
+    return best
 
 
 def is_outside_working_hours(timestamp: datetime, config) -> bool:

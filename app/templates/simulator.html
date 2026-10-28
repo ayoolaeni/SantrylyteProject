@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Attack Simulator · SentryLite{% endblock %}
+{% block content %}
+<div class="topbar">
+  <h1 style="font-size:1.3rem; margin:0;">Attack Simulator</h1>
+  <a href="{{ url_for('dashboard.index') }}"><button type="button">Open the dashboard →</button></a>
+</div>
+<p class="page-intro">Launch a realistic attack against SentryLite with one click: no terminal, no extra tools. The simulated log lines go through the real pipeline (parsing, detection rules, critical assets, incidents), exactly like real traffic. Events are labelled with the log source "Attack Simulator".</p>
+<div id="simulator-root"></div>
+{% endblock %}
+{% block scripts %}<script type="module" src="{{ url_for('static', filename='js/simulator.js') }}"></script>{% endblock %}

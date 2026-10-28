@@ -2,43 +2,58 @@
 {% block title %}Dashboard · SentryLite{% endblock %}
 {% block content %}
 <div class="topbar">
-  <h1 style="font-size:1.3rem; margin:0;">Dashboard</h1>
+  <div class="flex" style="gap:14px;">
+    <h1 style="font-size:1.3rem; margin:0;">Security Dashboard</h1>
+    <span class="live" id="dash-live">Connecting…</span>
+  </div>
+  {% if current_user.role in ('ADMIN', 'ANALYST') %}
+  <a href="{{ url_for('dashboard.simulator') }}"><button type="button" class="danger">⚡ Simulate an attack</button></a>
+  {% endif %}
 </div>
 
 <div class="grid kpi-row" id="kpi-row" aria-live="polite"></div>
 
 <div class="grid charts-row mt-2">
   <div class="card">
-    <h2 style="font-size:1rem; margin-top:0;">Event volume (last hour)</h2>
-    <div style="height:260px;"><canvas id="volume-chart"></canvas></div>
+    <div class="flex-between">
+      <h2 style="font-size:1rem; margin:0;">Events per minute (last hour)</h2>
+      <span class="muted-small" id="volume-total"></span>
+    </div>
+    <div style="height:260px;" class="mt-1"><canvas id="volume-chart"></canvas></div>
   </div>
   <div class="card">
-    <h2 style="font-size:1rem; margin-top:0;">Priority distribution (24h)</h2>
+    <h2 style="font-size:1rem; margin-top:0;">Priority mix (24h)</h2>
     <div style="height:260px;"><canvas id="priority-chart"></canvas></div>
   </div>
 </div>
 
 <div class="grid charts-row-2 mt-2">
   <div class="card">
-    <h2 style="font-size:1rem; margin-top:0;">Top 10 sources (24h)</h2>
-    <div style="height:240px;"><canvas id="sources-chart"></canvas></div>
+    <h2 style="font-size:1rem; margin-top:0;">Top attacking IPs (24h)</h2>
+    <div class="muted-small" style="margin:-6px 0 8px;">Ranked by total risk score of their events</div>
+    <div style="height:220px;"><canvas id="attackers-chart"></canvas></div>
+    <h2 style="font-size:1rem;" class="mt-2">Busiest log sources (24h)</h2>
+    <div style="height:180px;"><canvas id="sources-chart"></canvas></div>
   </div>
   <div class="card">
     <div class="flex-between">
       <h2 style="font-size:1rem; margin:0;">Live event feed</h2>
-      <button type="button" id="feed-pause-toggle">Pause</button>
+      <div class="flex">
+        <span class="muted-small" id="feed-count"></span>
+        <button type="button" class="small" id="feed-pause-toggle">Pause</button>
+      </div>
     </div>
-    <div style="max-height:320px; overflow-y:auto;" aria-live="polite">
+    <div style="max-height:470px; overflow:auto;" class="mt-1">
       <table>
         <thead><tr><th>Time</th><th>Priority</th><th>Type</th><th>Src IP</th><th>Message</th></tr></thead>
-        <tbody id="feed-body"></tbody>
+        <tbody id="feed-body" aria-live="polite"></tbody>
       </table>
+      <div class="empty" id="feed-empty" hidden>No events yet. Use <b>Simulate an attack</b> or connect a log source.</div>
     </div>
   </div>
 </div>
 {% endblock %}
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/vendor/chart.umd.js') }}"></script>
-<script src="{{ url_for('static', filename='js/vendor/socket.io.min.js') }}"></script>
 <script type="module" src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 {% endblock %}

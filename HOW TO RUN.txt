@@ -40,6 +40,19 @@ EVERY TIME YOU WANT TO USE SENTRYLITE:
 That's it - you're in.
 
 
+TRY IT OUT (NO TERMINAL NEEDED):
+=================================
+1. Click "Attack Simulator" in the left menu.
+2. Click "Launch attack" on "Full attack chain".
+3. Open the Dashboard: within seconds you will see the attack arrive
+   live, alerts pop up and incidents being opened.
+4. Open "Incidents" to assign an incident to someone (with a note),
+   and "Reports" to download a PDF or CSV report.
+
+Tip: on the Attack Simulator page, "Start background traffic" keeps
+the dashboard busy with realistic activity during a presentation.
+
+
 TO CLOSE SENTRYLITE:
 ======================
 You don't have to do anything - you can just leave it running.

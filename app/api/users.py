@@ -14,7 +14,29 @@ from app.security.rbac import ApiError, role_required
 @api_bp.route("/users", methods=["GET"])
 @role_required("ADMIN")
 def list_users():
-    return paginated_response(User.query.order_by(User.username), lambda u: u.to_dict())
+    # "system" is the triage engine's internal service account, not a person.
+    query = User.query.filter(User.username != "system").order_by(User.username)
+    return paginated_response(query, lambda u: u.to_dict())
+
+
+@api_bp.route("/users/assignable", methods=["GET"])
+@role_required("ADMIN", "ANALYST")
+def assignable_users():
+    """Everyone an incident can be assigned to (active Admins and Analysts), for pickers."""
+    from app.api.incidents import ASSIGNABLE_ROLES
+
+    users = (
+        User.query.filter(
+            User.is_active_flag.is_(True),
+            User.role.in_(ASSIGNABLE_ROLES),
+            User.username != "system",
+        )
+        .order_by(User.full_name)
+        .all()
+    )
+    return jsonify(
+        [{"user_id": u.user_id, "username": u.username, "full_name": u.full_name, "role": u.role} for u in users]
+    )
 
 
 @api_bp.route("/users", methods=["POST"])
@@ -28,6 +50,8 @@ def create_user():
         raise ApiError("VALIDATION_ERROR", f"role must be one of {ROLES}", 422)
     if User.query.filter_by(username=body["username"]).first():
         raise ApiError("VALIDATION_ERROR", "username already exists", 422)
+    if User.query.filter(db.func.lower(User.email) == str(body["email"]).strip().lower()).first():
+        raise ApiError("VALIDATION_ERROR", "another user already has that email address", 422)
 
     temp_password = body.get("password") or secrets.token_urlsafe(12)
     user = User(

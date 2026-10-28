@@ -2,6 +2,7 @@
 {% block title %}Users · Admin{% endblock %}
 {% block content %}
 <div class="topbar"><h1 style="font-size:1.3rem; margin:0;">Users</h1></div>
+<p class="page-intro">Who can sign in and what they can do. Admins and Analysts can be assigned incidents; Viewers have read-only access.</p>
 <div id="admin-users-root"></div>
 {% endblock %}
 {% block scripts %}<script type="module" src="{{ url_for('static', filename='js/admin.js') }}"></script>{% endblock %}

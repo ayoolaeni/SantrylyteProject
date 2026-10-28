@@ -16,18 +16,22 @@
     <nav aria-label="Primary">
       <a href="{{ url_for('dashboard.index') }}" class="{{ 'active' if request.path == '/' }}">Dashboard</a>
       <a href="{{ url_for('alerts.index') }}" class="{{ 'active' if request.path == '/alerts' }}">Alert Queue</a>
-      <a href="{{ url_for('incidents.index') }}" class="{{ 'active' if request.path == '/incidents' }}">Incidents</a>
+      <a href="{{ url_for('incidents.index') }}" class="{{ 'active' if request.path.startswith('/incidents') }}">Incidents <span class="nav-badge" id="my-incidents-badge" title="Open incidents assigned to you"></span></a>
       <a href="{{ url_for('dashboard.reports') }}" class="{{ 'active' if request.path == '/reports' }}">Reports</a>
+      {% if current_user.role in ('ADMIN', 'ANALYST') %}
+      <a href="{{ url_for('dashboard.simulator') }}" class="{{ 'active' if request.path == '/simulator' }}">Attack Simulator</a>
+      {% endif %}
       {% if current_user.role == 'ADMIN' %}
       <div class="text-muted mt-2" style="font-size:0.75rem; text-transform:uppercase; padding: 0 10px;">Admin</div>
-      <a href="{{ url_for('admin.sources') }}">Sources</a>
-      <a href="{{ url_for('admin.rules') }}">Rules</a>
-      <a href="{{ url_for('admin.assets') }}">Critical Assets</a>
-      <a href="{{ url_for('admin.users') }}">Users</a>
+      <a href="{{ url_for('admin.sources') }}" class="{{ 'active' if request.path == '/admin/sources' }}">Log Sources</a>
+      <a href="{{ url_for('admin.rules') }}" class="{{ 'active' if request.path == '/admin/rules' }}">Detection Rules</a>
+      <a href="{{ url_for('admin.assets') }}" class="{{ 'active' if request.path == '/admin/assets' }}">Critical Assets</a>
+      <a href="{{ url_for('admin.users') }}" class="{{ 'active' if request.path == '/admin/users' }}">Users</a>
       {% endif %}
     </nav>
     <div class="mt-2" style="position:absolute; bottom:16px; width: 190px;">
-      <div class="text-muted" style="font-size:0.8rem;">{{ current_user.full_name }} · {{ current_user.role }}</div>
+      <div class="live" id="live-indicator" title="Real-time connection to the server">Connecting…</div>
+      <div class="text-muted mt-1" style="font-size:0.8rem;">{{ current_user.full_name }} · {{ current_user.role }}</div>
       <div class="flex mt-1">
         <button type="button" id="theme-toggle" aria-label="Toggle light/dark theme">☾/☀</button>
         <form method="post" action="{{ url_for('auth.logout') }}" style="margin:0;">
@@ -49,6 +53,9 @@
   </main>
 </div>
 <div class="toast-stack" id="toast-stack" aria-live="polite"></div>
+<script id="current-user" type="application/json">{{ {"user_id": current_user.user_id, "full_name": current_user.full_name, "role": current_user.role} | tojson }}</script>
+<script src="{{ url_for('static', filename='js/vendor/socket.io.min.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/notify.js') }}"></script>
 {% else %}
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}

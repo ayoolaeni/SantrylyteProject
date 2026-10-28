@@ -1,0 +1,84 @@
+SENTRYLITE - HOW TO RUN ON A MAC
+=================================
+
+You only need to do this once:
+
+1. Install "Docker Desktop for Mac"
+   Download it from: https://www.docker.com/products/docker-desktop/
+   Pick "Apple Silicon" for M1/M2/M3/M4 Macs, or "Intel chip" for older
+   Macs (Apple menu > About This Mac shows which one you have).
+   Drag it into Applications, open it, and accept the prompts.
+
+2. Open Docker Desktop and wait until it says "Docker Desktop is running".
+   You can leave it running in the background from now on.
+
+3. Allow the SentryLite scripts to run (macOS blocks downloaded scripts
+   the first time). Open the "Terminal" app, type the following, then a
+   space, then drag the SentryLite folder into the Terminal window and
+   press Enter:
+
+       xattr -dr com.apple.quarantine
+
+   Nothing will be printed - that's normal. You can close Terminal.
+
+
+EVERY TIME YOU WANT TO USE SENTRYLITE:
+========================================
+
+1. Make sure Docker Desktop is open (see step 2 above).
+
+2. Double-click the file called:
+       Start SentryLite.command
+
+3. A Terminal window will open and do some work. The first time you
+   run it, this can take several minutes (it's downloading and setting
+   everything up). After the first time, it only takes a few seconds.
+
+4. When it's done, your web browser will open automatically to
+   SentryLite. If it doesn't, just open your browser and go to:
+
+       http://localhost:5050
+
+   (Note: on a Mac it is 5050, not 5000.)
+
+5. Log in with:
+       Username: admin
+       Password: admin
+
+   You'll be asked to choose a new password the first time - just
+   type any password with 8 or more characters.
+
+
+TRY IT OUT (NO TERMINAL NEEDED):
+=================================
+1. Click "Attack Simulator" in the left menu.
+2. Click "Launch attack" on "Full attack chain".
+3. Open the Dashboard: within seconds you will see the attack arrive
+   live, alerts pop up and incidents being opened.
+4. Open "Incidents" to assign an incident to someone (with a note),
+   and "Reports" to download a PDF or CSV report.
+
+Tip: on the Attack Simulator page, "Start background traffic" keeps
+the dashboard busy with realistic activity during a presentation.
+
+
+TO CLOSE SENTRYLITE:
+======================
+You don't have to do anything - you can just leave it running.
+If you want to shut it down, double-click:
+       Stop SentryLite.command
+
+Your data (incidents, rules, users, everything) is kept safe and will
+still be there next time you run "Start SentryLite.command".
+
+
+IF SOMETHING GOES WRONG:
+==========================
+- "cannot be opened because it is from an unidentified developer" or
+  "Apple could not verify..." when you double-click: do step 3 above,
+  or go to System Settings > Privacy & Security, scroll down and click
+  "Open Anyway" next to the SentryLite message.
+- Make sure Docker Desktop is open and says "running" before you
+  double-click "Start SentryLite.command".
+- If the Terminal window shows an error message, take a screenshot
+  and send it back for help.

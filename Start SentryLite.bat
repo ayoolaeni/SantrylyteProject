@@ -19,6 +19,10 @@ if errorlevel 1 (
     exit /b 1
 )
 
+if not exist ".env" (
+    powershell -NoProfile -Command "$b = New-Object byte[] 32; [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b); 'SECRET_KEY=' + [BitConverter]::ToString($b).Replace('-','') | Set-Content -Encoding ascii .env"
+)
+
 echo Docker is running. Building and starting SentryLite...
 echo (The first time you run this, it can take a few minutes. After that,
 echo  it will start in a few seconds.)

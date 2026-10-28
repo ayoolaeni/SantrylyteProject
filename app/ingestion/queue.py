@@ -48,6 +48,12 @@ class RawQueue:
         except queue.Empty:
             return None
 
+    def get_nowait(self):
+        try:
+            return self._q.get_nowait()
+        except queue.Empty:
+            return None
+
     def qsize(self):
         return self._q.qsize()
 

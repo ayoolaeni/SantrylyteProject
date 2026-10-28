@@ -2,6 +2,25 @@ from datetime import datetime, timezone
 
 from app.extensions import db
 
+# What a rule can do besides adding its weight to an event's score. Every key is optional;
+# a rule with no actions just scores (the original behaviour).
+#   create_incident    bool        open an incident for the matching event (grouped per attacker)
+#   incident_priority  str | None  priority for that incident (defaults to the event's priority)
+#   min_priority       str | None  raise the event's priority to at least this level
+#   assign_to          int | None  user_id the resulting incident is assigned to
+#   notify_user_ids    [int]       users who get a real-time notification
+#   notify_roles       [str]       every active user with one of these roles is notified
+#   suppress           bool        known-benign: auto-dismiss the event, no alert, no incident
+RULE_ACTION_KEYS = (
+    "create_incident", "incident_priority", "min_priority", "assign_to",
+    "notify_user_ids", "notify_roles", "suppress",
+)
+
+RULE_CATEGORIES = (
+    "AUTHENTICATION", "PRIVILEGE", "RECON", "WEB_ATTACK", "DEFENCE_EVASION",
+    "DATA_ACCESS", "ACCOUNT", "MALWARE", "POLICY", "OTHER",
+)
+
 
 class TriageRule(db.Model):
     __tablename__ = "triage_rule"
@@ -10,6 +29,7 @@ class TriageRule(db.Model):
     name = db.Column(db.String(100), unique=True, nullable=False)
     description = db.Column(db.Text, nullable=True)
     condition = db.Column(db.JSON, nullable=False)
+    actions = db.Column(db.JSON, nullable=True)
     weight = db.Column(db.Numeric(6, 2), nullable=False)
     category = db.Column(db.String(50), nullable=False)
     mitre_technique = db.Column(db.String(20), nullable=True)
@@ -29,6 +49,7 @@ class TriageRule(db.Model):
             "name": self.name,
             "description": self.description,
             "condition": self.condition,
+            "actions": self.actions or {},
             "weight": float(self.weight),
             "category": self.category,
             "mitre_technique": self.mitre_technique,

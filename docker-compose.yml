@@ -28,7 +28,7 @@ services:
       SYSLOG_UDP_PORT: 5514
       SYSLOG_TCP_PORT: 5514
     ports:
-      - "5000:5000"
+      - "${SENTRYLITE_PORT:-5000}:5000"
       - "5514:5514/udp"
       - "5514:5514/tcp"
     volumes:

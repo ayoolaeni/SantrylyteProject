@@ -107,6 +107,9 @@ def create_incident_from_event(event_id):
     if not event:
         raise ApiError("NOT_FOUND", "Event not found", 404)
     body = json_body() if request.get_data() else {}
+    from app.api.incidents import notify_assignee, resolve_assignee
+
+    assignee = resolve_assignee(body.get("assign_to"))
 
     incident = Incident(
         reference=_next_incident_reference(),
@@ -114,7 +117,7 @@ def create_incident_from_event(event_id):
         originating_event_id=event.event_id,
         priority_level=event.priority_level,
         state="NEW",
-        assigned_to=body.get("assign_to"),
+        assigned_to=assignee.user_id if assignee else None,
         created_by=current_user.user_id,
     )
     db.session.add(incident)
@@ -128,7 +131,17 @@ def create_incident_from_event(event_id):
             comment="Created from event by analyst.",
         )
     )
+    if assignee:
+        db.session.add(
+            IncidentAction(
+                incident_id=incident.incident_id,
+                user_id=current_user.user_id,
+                action_type="ASSIGNED",
+                to_value=assignee.full_name[:100],
+            )
+        )
     event.status = "ACKNOWLEDGED"
     db.session.commit()
     emit_incident_created(incident.to_summary())
+    notify_assignee(incident, assignee)
     return jsonify(incident.to_dict()), 201

@@ -1,7 +1,8 @@
 {% extends "base.html" %}
-{% block title %}Rules · Admin{% endblock %}
+{% block title %}Detection Rules · Admin{% endblock %}
 {% block content %}
-<div class="topbar"><h1 style="font-size:1.3rem; margin:0;">Triage Rules</h1></div>
+<div class="topbar"><h1 style="font-size:1.3rem; margin:0;">Detection Rules</h1></div>
+<p class="page-intro">Rules decide what counts as suspicious, how serious it is, and what SentryLite does about it automatically.</p>
 <div id="admin-rules-root"></div>
 {% endblock %}
 {% block scripts %}<script type="module" src="{{ url_for('static', filename='js/admin.js') }}"></script>{% endblock %}

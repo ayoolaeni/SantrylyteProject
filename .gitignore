@@ -16,6 +16,9 @@ instance/
 htmlcov/
 *_ground_truth.csv
 
+# Packaged client builds
+*.zip
+
 # Editor / OS
 .vscode/
 .idea/

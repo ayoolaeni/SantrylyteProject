@@ -2,6 +2,7 @@
 {% block title %}Critical Assets · Admin{% endblock %}
 {% block content %}
 <div class="topbar"><h1 style="font-size:1.3rem; margin:0;">Critical Assets</h1></div>
+<p class="page-intro">Your most important machines. Threats against them are scored higher, so they rise to the top of the queue.</p>
 <div id="admin-assets-root"></div>
 {% endblock %}
 {% block scripts %}<script type="module" src="{{ url_for('static', filename='js/admin.js') }}"></script>{% endblock %}
