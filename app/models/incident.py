@@ -1,6 +1,13 @@
 from datetime import datetime, timezone
 
 from app.extensions import db
+from app.utils.time import coerce_utc
+
+
+def _iso_utc(dt):
+    """ISO string that always carries its UTC offset (SQLite hands back naive datetimes)."""
+    return coerce_utc(dt).isoformat() if dt else None
+
 
 INCIDENT_STATES = (
     "NEW", "ACKNOWLEDGED", "INVESTIGATING", "ESCALATED",
@@ -47,6 +54,9 @@ class Incident(db.Model):
     resolved_at = db.Column(db.DateTime(timezone=True), nullable=True)
     closed_at = db.Column(db.DateTime(timezone=True), nullable=True)
     resolution_summary = db.Column(db.Text, nullable=True)
+    # When the current assignee first opened the incident (cleared on reassignment), so the
+    # admin who dispatched it can see whether it has actually been picked up.
+    assignee_seen_at = db.Column(db.DateTime(timezone=True), nullable=True)
 
     originating_event = db.relationship("Event", foreign_keys=[originating_event_id])
     assignee = db.relationship("User", foreign_keys=[assigned_to])
@@ -58,6 +68,34 @@ class Incident(db.Model):
 
     def can_transition_to(self, to_state):
         return to_state in TRANSITIONS.get(self.state, set())
+
+    def participants(self):
+        """Everyone who did something to this incident (not the triage engine), with what they did."""
+        people = {}
+        for action in self.actions:
+            actor = action.actor
+            if actor is None or actor.username == "system":
+                continue
+            entry = people.setdefault(actor.user_id, {
+                "user_id": actor.user_id, "full_name": actor.full_name, "role": actor.role,
+                "actions": {}, "last_action_at": None,
+            })
+            entry["actions"][action.action_type] = entry["actions"].get(action.action_type, 0) + 1
+            created = _iso_utc(action.created_at)
+            if created and (entry["last_action_at"] is None or created > entry["last_action_at"]):
+                entry["last_action_at"] = created
+        return sorted(people.values(), key=lambda p: p["last_action_at"] or "", reverse=True)
+
+    def last_worked_by(self):
+        """Who last moved the investigation forward (state change or note), for list views."""
+        for action in reversed(self.actions):
+            actor = action.actor
+            if actor is None or actor.username == "system":
+                continue
+            if action.action_type in ("ASSIGNED", "UNASSIGNED", "VIEWED", "CREATED"):
+                continue
+            return {"full_name": actor.full_name, "at": _iso_utc(action.created_at)}
+        return None
 
     def to_summary(self):
         return {
@@ -72,7 +110,14 @@ class Incident(db.Model):
             "acknowledged_at": self.acknowledged_at.isoformat() if self.acknowledged_at else None,
             "resolved_at": self.resolved_at.isoformat() if self.resolved_at else None,
             "closed_at": self.closed_at.isoformat() if self.closed_at else None,
+            "assignee_seen_at": _iso_utc(self.assignee_seen_at),
         }
+
+    def to_list_item(self):
+        """Summary plus who last worked on it (loads the actions, so only for list pages)."""
+        d = self.to_summary()
+        d["last_worked_by"] = self.last_worked_by()
+        return d
 
     def to_dict(self):
         d = self.to_summary()
@@ -84,5 +129,6 @@ class Incident(db.Model):
             "created_by": self.created_by,
             "actions": [a.to_dict() for a in self.actions],
             "linked_events": [e.to_summary() for e in self.linked_events],
+            "participants": self.participants(),
         })
         return d

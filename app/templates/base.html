@@ -27,6 +27,7 @@
       <a href="{{ url_for('admin.rules') }}" class="{{ 'active' if request.path == '/admin/rules' }}">Detection Rules</a>
       <a href="{{ url_for('admin.assets') }}" class="{{ 'active' if request.path == '/admin/assets' }}">Critical Assets</a>
       <a href="{{ url_for('admin.users') }}" class="{{ 'active' if request.path == '/admin/users' }}">Users</a>
+      <a href="{{ url_for('admin.reset') }}" class="{{ 'active' if request.path == '/admin/reset' }}" style="color:var(--critical);">Reset Data</a>
       {% endif %}
     </nav>
     <div class="mt-2" style="position:absolute; bottom:16px; width: 190px;">

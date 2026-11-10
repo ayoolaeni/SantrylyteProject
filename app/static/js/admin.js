@@ -855,6 +855,60 @@ async function initUsers() {
   await load();
 }
 
+// =====================================================================
+// Reset data
+// =====================================================================
+async function initReset() {
+  const root = document.getElementById('admin-reset-root');
+  const s = await api.get('/stats/summary');
+  const confirmIn = el('input', { type: 'text', placeholder: 'Type RESET here', style: 'max-width:220px;' });
+  const btn = el('button', { class: 'danger' }, 'Reset all data');
+
+  btn.addEventListener('click', async () => {
+    if (confirmIn.value.trim() !== 'RESET') {
+      window.alert('Type RESET in the box to confirm.');
+      return;
+    }
+    if (!window.confirm('Permanently delete all events, incidents, notes, log sources and history? User accounts are kept.')) return;
+    btn.disabled = true;
+    try {
+      const r = await api.post('/admin/reset-data', { confirm: 'RESET' });
+      showToast('All data reset', `Removed ${r.cleared.events} events and ${r.cleared.incidents} incidents. Users were kept.`, null, 'ok');
+      setTimeout(() => (window.location.href = '/'), 1500);
+    } catch (err) {
+      btn.disabled = false;
+      window.alert(err.message);
+    }
+  });
+
+  const openIncidents = Object.values(s.open_incidents_by_priority).reduce((a, b) => a + b, 0);
+  root.append(
+    el('div', { class: 'card', style: 'border-color:var(--critical); max-width:820px;' }, [
+      el('h2', { class: 'section-title', style: 'color:var(--critical);' }, 'Reset all data'),
+      el('div', {}, 'Starts SentryLite fresh, for example before a new demo or when handing it over to a client.'),
+      el('div', { class: 'report-grid mt-2' }, [
+        el('div', {}, [
+          el('b', {}, 'Deleted'),
+          el('ul', {}, [
+            el('li', {}, `All events (${s.events_last_24h} in the last 24h)`),
+            el('li', {}, `All incidents (${openIncidents} currently open), their notes and timelines`),
+            el('li', {}, 'All log sources and the activity history'),
+          ]),
+        ]),
+        el('div', {}, [
+          el('b', {}, 'Restored to defaults'),
+          el('ul', {}, [el('li', {}, 'Detection rules (the 12 built-in rules)'), el('li', {}, 'Critical assets (the 2 examples)')]),
+          el('b', {}, 'Kept'),
+          el('ul', {}, [el('li', {}, 'Every user account and password')]),
+        ]),
+      ]),
+      el('div', { class: 'flash flash-error mt-1' }, 'This cannot be undone.'),
+      el('div', { class: 'flex mt-1' }, [confirmIn, btn]),
+    ]),
+  );
+}
+
+if (document.getElementById('admin-reset-root')) initReset();
 if (document.getElementById('admin-sources-root')) initSources();
 if (document.getElementById('admin-rules-root')) initRules();
 if (document.getElementById('admin-users-root')) initUsers();

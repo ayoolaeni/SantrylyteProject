@@ -4,7 +4,7 @@ from app.extensions import db
 from app.models.types import BigIntPK
 
 ACTION_TYPES = (
-    "CREATED", "ACKNOWLEDGED", "ASSIGNED", "UNASSIGNED", "COMMENTED", "ESCALATED",
+    "CREATED", "ACKNOWLEDGED", "ASSIGNED", "UNASSIGNED", "VIEWED", "COMMENTED", "ESCALATED",
     "STATE_CHANGED", "EVENT_LINKED", "RESOLVED", "CLOSED", "REOPENED",
 )
 

@@ -20,7 +20,7 @@ def list_users():
 
 
 @api_bp.route("/users/assignable", methods=["GET"])
-@role_required("ADMIN", "ANALYST")
+@role_required("ADMIN")
 def assignable_users():
     """Everyone an incident can be assigned to (active Admins and Analysts), for pickers."""
     from app.api.incidents import ASSIGNABLE_ROLES

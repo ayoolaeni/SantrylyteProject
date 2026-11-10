@@ -107,8 +107,10 @@ def create_incident_from_event(event_id):
     if not event:
         raise ApiError("NOT_FOUND", "Event not found", 404)
     body = json_body() if request.get_data() else {}
-    from app.api.incidents import notify_assignee, resolve_assignee
+    from app.api.incidents import notify_assignee, require_assigner, resolve_assignee
 
+    if body.get("assign_to"):
+        require_assigner()
     assignee = resolve_assignee(body.get("assign_to"))
 
     incident = Incident(

@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}Reset Data · Admin{% endblock %}
+{% block content %}
+<div class="topbar"><h1 style="font-size:1.3rem; margin:0;">Reset Data</h1></div>
+<p class="page-intro">Clear everything SentryLite has collected and start fresh. User accounts are never touched.</p>
+<div id="admin-reset-root"></div>
+{% endblock %}
+{% block scripts %}<script type="module" src="{{ url_for('static', filename='js/admin.js') }}"></script>{% endblock %}

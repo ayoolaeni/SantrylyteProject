@@ -27,3 +27,9 @@ def users():
 @role_required("ADMIN")
 def assets():
     return render_template("admin/assets.html")
+
+
+@admin_bp.route("/reset")
+@role_required("ADMIN")
+def reset():
+    return render_template("admin/reset.html")

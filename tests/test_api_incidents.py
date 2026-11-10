@@ -95,18 +95,79 @@ def test_reopen_from_closed_requires_admin(admin_client, analyst_client, db, log
     assert allowed.get_json()["state"] == "INVESTIGATING"
 
 
-def test_assign_and_comment(analyst_client, admin_user, db, log_source):
+def test_assign_and_comment(admin_client, analyst_client, analyst_user, db, log_source):
     incident = _make_critical_incident(analyst_client, db, log_source)
     ref = incident.reference
 
-    assign_resp = analyst_client.post(f"/api/v1/incidents/{ref}/assign", json={"user_id": admin_user.user_id})
+    assign_resp = admin_client.post(f"/api/v1/incidents/{ref}/assign", json={"user_id": analyst_user.user_id, "note": "Check it"})
     assert assign_resp.status_code == 200
-    assert assign_resp.get_json()["assigned_to"] == admin_user.user_id
+    assert assign_resp.get_json()["assigned_to"] == analyst_user.user_id
 
     comment_resp = analyst_client.post(f"/api/v1/incidents/{ref}/comment", json={"comment": "Investigating now."})
     assert comment_resp.status_code == 200
     comments = [a for a in comment_resp.get_json()["actions"] if a["action_type"] == "COMMENTED"]
     assert len(comments) == 1
+
+
+def test_only_admin_can_assign(admin_user, analyst_client, analyst_user, viewer_client, db, log_source):
+    incident = _make_critical_incident(analyst_client, db, log_source)
+    ref = incident.reference
+
+    for client in (analyst_client, viewer_client):
+        resp = client.post(f"/api/v1/incidents/{ref}/assign", json={"user_id": analyst_user.user_id})
+        assert resp.status_code == 403
+    assert analyst_client.get("/api/v1/users/assignable").status_code == 403
+
+    event_id = incident.originating_event_id
+    resp = analyst_client.post(f"/api/v1/events/{event_id}/create-incident", json={"assign_to": admin_user.user_id})
+    assert resp.status_code == 403
+    assert Incident.query.count() == 1
+
+
+def test_admin_sees_assignee_opened_and_worked_on_it(admin_client, analyst_client, analyst_user, db, log_source):
+    incident = _make_critical_incident(analyst_client, db, log_source)
+    ref = incident.reference
+    admin_client.post(f"/api/v1/incidents/{ref}/assign", json={"user_id": analyst_user.user_id})
+
+    before = admin_client.get(f"/api/v1/incidents/{ref}").get_json()
+    assert before["assignee_seen_at"] is None  # the admin opening it doesn't count
+
+    analyst_client.get(f"/api/v1/incidents/{ref}")  # the assignee opens it
+    analyst_client.post(f"/api/v1/incidents/{ref}/transition", json={"to_state": "ACKNOWLEDGED"})
+
+    after = admin_client.get(f"/api/v1/incidents/{ref}").get_json()
+    assert after["assignee_seen_at"] is not None
+    assert [a["action_type"] for a in after["actions"]].count("VIEWED") == 1
+    worked = {p["full_name"]: p["actions"] for p in after["participants"]}
+    assert worked[analyst_user.full_name]["ACKNOWLEDGED"] == 1
+
+    listed = admin_client.get("/api/v1/incidents").get_json()["data"][0]
+    assert listed["last_worked_by"]["full_name"] == analyst_user.full_name
+
+
+def test_reset_data_keeps_users_and_restores_defaults(admin_client, analyst_client, analyst_user, viewer_client, db, log_source):
+    from app.models.critical_asset import CriticalAsset
+    from app.models.log_source import LogSource
+    from app.models.user import User
+
+    _make_critical_incident(analyst_client, db, log_source)
+    users_before = User.query.count()
+
+    assert analyst_client.post("/api/v1/admin/reset-data", json={"confirm": "RESET"}).status_code == 403
+    assert admin_client.post("/api/v1/admin/reset-data", json={"confirm": "yes"}).status_code == 422
+
+    resp = admin_client.post("/api/v1/admin/reset-data", json={"confirm": "RESET"})
+    assert resp.status_code == 200
+    assert resp.get_json()["cleared"]["incidents"] == 1
+
+    assert Incident.query.count() == 0
+    assert Event.query.count() == 0
+    assert LogSource.query.count() == 0
+    assert User.query.count() == users_before
+    assert TriageRule.query.count() == 12 and TriageRule.query.filter_by(name="Malware").first() is None
+    assert CriticalAsset.query.count() == 2
+    # signed-in users keep working after the reset
+    assert analyst_client.get("/api/v1/incidents").status_code == 200
 
 
 def test_link_event(analyst_client, db, log_source):

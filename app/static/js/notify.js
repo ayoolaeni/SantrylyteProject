@@ -62,6 +62,12 @@ socket.on('notify', (note) => {
   refreshBadge();
 });
 
+// An admin reset all data: every open page reloads so nobody keeps looking at deleted records.
+socket.on('data:reset', (info) => {
+  showToast('Data was reset', `${info && info.by ? info.by : 'An administrator'} cleared all data. Reloading…`, null, 'info');
+  setTimeout(() => window.location.reload(), 2000);
+});
+
 socket.on('incident:created', refreshBadge);
 socket.on('incident:updated', refreshBadge);
 

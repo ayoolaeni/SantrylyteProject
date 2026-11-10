@@ -16,7 +16,7 @@ function renderLive() {
   liveBox.append(
     el('div', { class: 'flex-between' }, [
       el('h2', { class: 'section-title', style: 'margin:0;' }, 'What SentryLite has seen since you opened this page'),
-      el('button', { class: 'small ghost', onclick: () => { Object.keys(counters).forEach((k) => (counters[k] = 0)); PRIORITY_ORDER.forEach((p) => (byPriority[p] = 0)); renderLive(); } }, 'Reset'),
+      el('button', { class: 'small ghost', onclick: () => { Object.keys(counters).forEach((k) => (counters[k] = 0)); PRIORITY_ORDER.forEach((p) => (byPriority[p] = 0)); renderLive(); } }, 'Clear counters'),
     ]),
     el('div', { class: 'stat-inline mt-1' }, [
       el('div', {}, [el('b', {}, String(counters.events)), 'events analysed']),
@@ -83,8 +83,16 @@ function scenarioCard(s) {
   ]);
 }
 
+const me = JSON.parse(document.getElementById('current-user').textContent);
+
 async function init() {
   const data = await api.get('/simulate/scenarios');
+  if (me.role === 'ADMIN') {
+    root.append(el('div', { class: 'help flex-between', style: 'gap:12px;' }, [
+      el('div', {}, 'Want a clean slate before a demo? Wipe all events and incidents (users are kept).'),
+      el('a', { href: '/admin/reset' }, el('button', { class: 'danger small' }, 'Reset all data…')),
+    ]));
+  }
   root.append(liveBox, bgBox, el('h2', { class: 'section-title' }, 'Attack scenarios'), grid);
   renderLive();
   renderBackground(data.background);

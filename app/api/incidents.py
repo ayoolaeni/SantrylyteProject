@@ -20,6 +20,13 @@ from app.triage.engine import _next_incident_reference
 
 # Roles that can work an incident, and so can have one assigned to them.
 ASSIGNABLE_ROLES = ("ADMIN", "ANALYST")
+# Only admins dispatch work: assigning, reassigning and unassigning incidents.
+ASSIGNER_ROLES = ("ADMIN",)
+
+
+def require_assigner():
+    if current_user.role not in ASSIGNER_ROLES:
+        raise ApiError("FORBIDDEN", "Only an administrator can assign incidents", 403)
 
 
 def resolve_assignee(user_id):
@@ -114,13 +121,41 @@ def list_incidents():
         query = query.filter(Incident.created_at <= to_ts)
 
     query = query.order_by(Incident.created_at.desc())
-    return paginated_response(query, lambda i: i.to_summary())
+    return paginated_response(query, lambda i: i.to_list_item())
+
+
+def _mark_seen_by_assignee(incident):
+    """First time the assignee opens the incident: record it and tell whoever assigned it."""
+    if incident.assigned_to != current_user.user_id or incident.assignee_seen_at is not None:
+        return
+    incident.assignee_seen_at = datetime.now(timezone.utc)
+    _log_action(incident, "VIEWED", comment="Opened by the assignee.")
+    assigner = next(
+        (a.actor for a in reversed(incident.actions) if a.action_type == "ASSIGNED" and a.actor is not None), None
+    )
+    db.session.commit()
+    emit_incident_updated(
+        {"incident_id": incident.incident_id, "state": incident.state, "assigned_to": incident.assigned_to, "updated_by": current_user.user_id}
+    )
+    if assigner is not None and assigner.username != "system" and assigner.user_id != current_user.user_id:
+        emit_user_notification(
+            assigner.user_id,
+            {
+                "user_id": assigner.user_id,
+                "kind": "seen",
+                "title": f"{current_user.full_name} opened {incident.reference}",
+                "body": f"The incident you assigned ({incident.title}) has been picked up.",
+                "link": f"/incidents/{incident.reference}",
+            },
+        )
 
 
 @api_bp.route("/incidents/<identifier>", methods=["GET"])
 @role_required()
 def get_incident(identifier):
-    return jsonify(_find_incident(identifier).to_dict())
+    incident = _find_incident(identifier)
+    _mark_seen_by_assignee(incident)
+    return jsonify(incident.to_dict())
 
 
 @api_bp.route("/incidents", methods=["POST"])
@@ -133,6 +168,8 @@ def create_incident():
     event = db.session.get(Event, event_id)
     if not event:
         raise ApiError("NOT_FOUND", "originating_event_id does not reference a known event", 404)
+    if body.get("assign_to"):
+        require_assigner()
     assignee = resolve_assignee(body.get("assign_to"))
 
     incident = Incident(
@@ -228,7 +265,7 @@ def transition_incident(identifier):
 
 
 @api_bp.route("/incidents/<identifier>/assign", methods=["POST"])
-@role_required("ADMIN", "ANALYST")
+@role_required(*ASSIGNER_ROLES)
 def assign_incident(identifier):
     incident = _find_incident(identifier)
     body = json_body()
@@ -241,6 +278,9 @@ def assign_incident(identifier):
         return jsonify(incident.to_dict())
 
     from_value = incident.assignee.full_name[:100] if incident.assignee else None
+    if new_id != incident.assigned_to:
+        # A new assignee hasn't seen it yet (an admin assigning to themselves obviously has).
+        incident.assignee_seen_at = datetime.now(timezone.utc) if new_id == current_user.user_id else None
     incident.assigned_to = new_id
     _log_action(
         incident, "ASSIGNED" if assignee else "UNASSIGNED",

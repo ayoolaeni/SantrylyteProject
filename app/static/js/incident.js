@@ -1,5 +1,5 @@
 import { api, qs } from './api.js';
-import { el, priorityPill, formatTime, clear, select, showToast } from './ui.js';
+import { el, priorityPill, formatTime, clear, select, showToast, timeAgo } from './ui.js';
 import { connectLive, subscribe } from './socket.js';
 
 const TRANSITIONS = {
@@ -24,10 +24,25 @@ const REQUIRES_SUMMARY = new Set(['RESOLVED', 'FALSE_POSITIVE']);
 
 const me = JSON.parse(document.getElementById('current-user').textContent);
 const canWork = me.role === 'ADMIN' || me.role === 'ANALYST';
+// Only admins assign incidents (enforced server-side too).
+const canAssign = me.role === 'ADMIN';
+
+const ACTION_VERBS = {
+  ACKNOWLEDGED: 'acknowledged', STATE_CHANGED: 'changed state', ESCALATED: 'escalated', RESOLVED: 'resolved',
+  CLOSED: 'closed', REOPENED: 'reopened', COMMENTED: 'note', ASSIGNED: 'assigned', UNASSIGNED: 'unassigned',
+  VIEWED: 'opened it', CREATED: 'created', EVENT_LINKED: 'linked event',
+};
+
+function seenCell(inc) {
+  if (!inc.assigned_to) return el('span', { class: 'muted-small' }, '-');
+  return inc.assignee_seen_at
+    ? el('span', { class: 'status status-ok', title: formatTime(inc.assignee_seen_at) }, `Seen ${timeAgo(inc.assignee_seen_at)}`)
+    : el('span', { class: 'status status-warn' }, 'Not opened yet');
+}
 
 let assignableCache = null;
 async function assignableUsers() {
-  if (!canWork) return [];
+  if (!canAssign) return [];
   if (!assignableCache) assignableCache = api.get('/users/assignable').catch(() => []);
   return assignableCache;
 }
@@ -86,7 +101,7 @@ async function initList() {
   ]);
   const summary = el('div', { class: 'muted-small', style: 'margin-bottom:8px;' });
   const tbody = el('tbody');
-  const headers = ['Reference', 'Title', 'Priority', 'State', 'Assignee', 'Created'];
+  const headers = ['Reference', 'Title', 'Priority', 'State', 'Assignee', 'Seen by assignee', 'Last worked by', 'Created'];
   const tableWrap = el('div', { class: 'card', style: 'overflow-x:auto;' }, el('table', {}, [
     el('thead', {}, el('tr', {}, headers.map((h) => el('th', {}, h)))),
     tbody,
@@ -106,7 +121,7 @@ async function initList() {
       return;
     }
     res.data.forEach((inc) => {
-      const assigneeCell = canWork
+      const assigneeCell = canAssign
         ? assigneeSelect(users, inc.assigned_to, async (userId) => {
           await api.post(`/incidents/${inc.reference}/assign`, { user_id: userId });
           showToast('Assignment saved', `${inc.reference} → ${userId ? users.find((u) => u.user_id === userId)?.full_name : 'Unassigned'}`, null, 'ok');
@@ -119,6 +134,10 @@ async function initList() {
         el('td', {}, priorityPill(inc.priority_level)),
         el('td', {}, stateBadge(inc.state)),
         el('td', {}, assigneeCell),
+        el('td', {}, seenCell(inc)),
+        el('td', {}, inc.last_worked_by
+          ? [el('div', {}, inc.last_worked_by.full_name), el('div', { class: 'muted-small' }, timeAgo(inc.last_worked_by.at))]
+          : el('span', { class: 'muted-small' }, 'Not started')),
         el('td', { style: 'white-space:nowrap;' }, formatTime(inc.created_at)),
       ]));
     });
@@ -144,6 +163,7 @@ function describeAction(a) {
     case 'CREATED': return 'Incident created';
     case 'ASSIGNED': return a.from_value ? `Reassigned from ${a.from_value} to ${a.to_value}` : `Assigned to ${a.to_value}`;
     case 'UNASSIGNED': return `Unassigned (was ${a.from_value || 'nobody'})`;
+    case 'VIEWED': return `Opened by ${a.actor_name || 'the assignee'}`;
     case 'COMMENTED': return 'Comment';
     case 'EVENT_LINKED': return `Linked event #${a.to_value}`;
     case 'REOPENED': return 'Reopened';
@@ -259,7 +279,7 @@ async function initDetail() {
       : null;
 
     let assignBlock;
-    if (canWork) {
+    if (canAssign) {
       const options = [['', 'Unassigned']].concat(users.map((u) => [u.user_id, `${u.full_name}${u.user_id === me.user_id ? ' (me)' : ''} · ${u.role.toLowerCase()}`]));
       const picker = select(options, incident.assigned_to ?? '', { 'aria-label': 'Assignee' });
       const noteIn = el('textarea', { rows: 2, placeholder: 'Note for the person you assign (optional), e.g. "Check if this IP logged in anywhere else"' });
@@ -280,6 +300,31 @@ async function initDetail() {
     } else {
       assignBlock = null;
     }
+
+    // Who has this incident, whether they have opened it, and everyone who worked on it.
+    const people = incident.participants || [];
+    const peopleBlock = el('div', {}, [
+      el('h3', { class: 'mt-2', style: 'font-size:0.95rem;' }, 'People involved'),
+      incident.assigned_to
+        ? el('div', { class: 'flex', style: 'flex-wrap:wrap; gap:8px;' }, [
+          el('span', {}, `Assignee: ${incident.assignee_name}`),
+          incident.assignee_seen_at
+            ? el('span', { class: 'status status-ok', title: formatTime(incident.assignee_seen_at) }, `Opened it ${timeAgo(incident.assignee_seen_at)}`)
+            : el('span', { class: 'status status-warn' }, 'Has not opened it yet'),
+        ])
+        : el('div', { class: 'muted-small' }, 'Not assigned yet.'),
+      people.length
+        ? el('table', { class: 'mt-1' }, [
+          el('thead', {}, el('tr', {}, ['Person', 'What they did', 'Last activity'].map((h) => el('th', {}, h)))),
+          el('tbody', {}, people.map((p) => el('tr', {}, [
+            el('td', {}, [el('div', { style: 'font-weight:600;' }, p.full_name), el('div', { class: 'muted-small' }, p.role.toLowerCase())]),
+            el('td', { class: 'muted-small' }, Object.entries(p.actions)
+              .map(([type, n]) => `${ACTION_VERBS[type] || type.toLowerCase()}${n > 1 ? ` ×${n}` : ''}`).join(', ')),
+            el('td', { class: 'muted-small', title: formatTime(p.last_action_at) }, timeAgo(p.last_action_at)),
+          ]))),
+        ])
+        : el('div', { class: 'muted-small mt-1' }, 'Nobody has worked on it yet.'),
+    ]);
 
     const notesBlock = el('div', {}, [
       el('h3', { class: 'mt-2', style: 'font-size:0.95rem;' }, `Notes (${notes.length})`),
@@ -302,6 +347,7 @@ async function initDetail() {
       el('div', { style: 'font-weight:600;' }, incident.assignee_name || 'Nobody yet'),
       handoverBox,
       assignBlock,
+      peopleBlock,
       notesBlock,
       el('h3', { class: 'mt-2', style: 'font-size:0.95rem;' }, 'Audit timeline'),
       el('ul', { class: 'timeline' }, (incident.actions || []).slice().reverse().map((a) => el('li', {}, [
